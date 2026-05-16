@@ -1,0 +1,55 @@
+name: Fly.AI Agent Crons
+
+on:
+  schedule:
+    - cron: '0 10 * * *'    # 07h00 BRT — research
+    - cron: '55 10 * * *'   # 07h55 BRT — daily-brief
+    - cron: '0 1 * * 1'     # domingo 22h BRT — weekly-planning
+    - cron: '0 21 * * 5'    # sexta 18h BRT — monthly-report (guard "última sexta" no script)
+  workflow_dispatch:
+    inputs:
+      workflow:
+        description: 'research | daily-brief | weekly-planning | monthly-report | content-production'
+        required: true
+        default: 'daily-brief'
+
+permissions:
+  contents: read
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Resolve workflow name
+        id: which
+        shell: bash
+        run: |
+          case "${{ github.event.schedule }}" in
+            '0 10 * * *')   echo "name=research" >> "$GITHUB_OUTPUT" ;;
+            '55 10 * * *')  echo "name=daily-brief" >> "$GITHUB_OUTPUT" ;;
+            '0 1 * * 1')    echo "name=weekly-planning" >> "$GITHUB_OUTPUT" ;;
+            '0 21 * * 5')   echo "name=monthly-report" >> "$GITHUB_OUTPUT" ;;
+            *)              echo "name=${{ github.event.inputs.workflow }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Run workflow
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+        run: npx tsx agents/workflows/${{ steps.which.outputs.name }}.ts

@@ -1,0 +1,19 @@
+{
+  "name": "flyai",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "dashboard",
+    "agents"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=flyai-dashboard",
+    "build": "npm run build --workspace=flyai-dashboard",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "agents:run": "npm run --workspace=@flyai/agents -s run --"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
