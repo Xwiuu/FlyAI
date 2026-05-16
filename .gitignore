@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# production
+*.tsbuildinfo
+next-env.d.ts
+
+# env files — never commit secrets
+.env
+.env.local
+.env*.local
+.env.development
+.env.production
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# claude code internals
+.claude/
+
+# supabase local
+supabase/.branches
+supabase/.temp
+supabase/.env
