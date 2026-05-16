@@ -1,4 +1,4 @@
-export const LLM_TIMEOUT_MS = 15_000;
+export const LLM_TIMEOUT_MS = 60_000;
 
 export type CallResult<T> =
   | { ok: true; value: T; duration_ms: number }
