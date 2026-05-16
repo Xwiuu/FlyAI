@@ -1,70 +1,63 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation"
+import { LogOut } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { SidebarNav } from "@/components/dashboard/sidebar-nav"
 
-const MODULES = [
-  { label: "Overview", href: "/overview" },
-  { label: "Financeiro", href: "/financeiro" },
-  { label: "Comercial", href: "/comercial" },
-  { label: "Clientes", href: "/clientes" },
-  { label: "Marketing", href: "/marketing" },
-  { label: "OKRs", href: "/okrs" },
-  { label: "Agentes", href: "/agentes" },
-] as const;
-
-export default async function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const supabase = createClient();
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
 
-  const { data: aalData } =
-    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
   if ((aalData?.currentLevel ?? "aal1") !== "aal2") {
-    redirect(aalData?.nextLevel === "aal2" ? "/2fa/verify" : "/2fa/enroll");
+    redirect(aalData?.nextLevel === "aal2" ? "/2fa/verify" : "/2fa/enroll")
   }
 
   const { data: authorized } = await supabase
     .from("authorized_users")
     .select("user_id")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle()
   if (!authorized) {
-    await supabase.auth.signOut();
-    redirect("/login?error=unauthorized");
+    await supabase.auth.signOut()
+    redirect("/login?error=unauthorized")
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-56 border-r border-border bg-background px-5 py-8">
-        <div className="mb-10">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            Fly.AI
-          </p>
-          <p className="mt-1 text-sm font-medium">Control plane</p>
+    <div className="flex min-h-screen overflow-x-hidden bg-background">
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-border bg-background">
+        {/* Brand */}
+        <div className="flex h-14 items-center border-b border-border px-5">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Fly.AI</p>
+            <p className="mt-0.5 text-sm font-medium leading-none">Control Plane</p>
+          </div>
         </div>
-        <nav className="flex flex-col gap-1">
-          {MODULES.map((m) => (
-            <Link
-              key={m.href}
-              href={m.href}
-              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              {m.label}
-            </Link>
-          ))}
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <SidebarNav />
         </nav>
-        <footer className="mt-10 text-xs text-muted-foreground">
-          <p className="truncate">{user.email}</p>
-        </footer>
+
+        {/* Footer */}
+        <div className="border-t border-border px-4 py-4">
+          <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+          <form action="/api/auth/signout" method="POST" className="mt-2">
+            <button
+              type="submit"
+              className="flex items-center gap-2 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <LogOut className="h-3 w-3" />
+              Sair
+            </button>
+          </form>
+        </div>
       </aside>
-      <main className="flex-1 px-10 py-8">{children}</main>
+
+      <main className="ml-56 min-w-0 flex-1 overflow-x-hidden px-10 py-8">{children}</main>
     </div>
-  );
+  )
 }
