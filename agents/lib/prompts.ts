@@ -28,7 +28,7 @@ export async function loadBrandBible(): Promise<string> {
 
 /** Returns the system prompt for an agent, prefixed with the shared brand rules. */
 export async function loadSystemPrompt(
-  agent: "research" | "content" | "analytics" | "ceo",
+  agent: "research" | "research-weekly" | "content" | "analytics" | "ceo",
 ): Promise<string> {
   const [brand, body] = await Promise.all([
     read("system-prompts/_brand-rules.md"),

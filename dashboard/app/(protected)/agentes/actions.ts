@@ -59,3 +59,36 @@ export async function approveBrief(id: string): Promise<ApproveResult> {
   revalidatePath("/overview")
   return { ok: true }
 }
+
+export async function approveWeeklyPlan(id: string): Promise<ApproveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "Não autenticado." }
+
+  const { error } = await supabase
+    .from("weekly_plans")
+    .update({
+      status: "approved",
+      approved_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+
+  if (error) return { ok: false, error: error.message }
+  revalidatePath("/agentes")
+  return { ok: true }
+}
+
+export async function archiveWeeklyPlan(id: string): Promise<ApproveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "Não autenticado." }
+
+  const { error } = await supabase
+    .from("weekly_plans")
+    .update({ status: "archived" })
+    .eq("id", id)
+
+  if (error) return { ok: false, error: error.message }
+  revalidatePath("/agentes")
+  return { ok: true }
+}

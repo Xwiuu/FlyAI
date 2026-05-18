@@ -11,9 +11,7 @@ interface BriefCardProps {
 }
 
 export function BriefCard({ brief, className, preview = false }: BriefCardProps) {
-  const html = renderMarkdown(
-    preview ? brief.content.slice(0, 800) + (brief.content.length > 800 ? "\n\n…" : "") : brief.content,
-  )
+  const html = renderMarkdown(brief.content)
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
@@ -29,9 +27,21 @@ export function BriefCard({ brief, className, preview = false }: BriefCardProps)
       </div>
 
       <div
-        className="prose-custom text-foreground"
+        className={cn(
+          "text-foreground",
+          preview && "max-h-[400px] overflow-y-auto pr-2",
+        )}
         dangerouslySetInnerHTML={{ __html: html }}
       />
+
+      {preview && brief.content.length > 0 && (
+        <p className="text-[11px] text-muted-foreground">
+          Scroll para ver o brief completo · Aprovação em{" "}
+          <a href="/agentes" className="underline underline-offset-2 hover:text-foreground transition-colors">
+            /agentes
+          </a>
+        </p>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { runResearchAgent } from "../agents/research-agent.js";
-import { runContentAgent } from "../agents/content-agent.js";
+import { runContentAgent, type ContentType } from "../agents/content-agent.js";
 import { runAnalyticsAgent } from "../agents/analytics-agent.js";
 import { approvalLink, postWebhook } from "../lib/discord.js";
 import { isMain, runCli } from "./_cli.js";
@@ -26,12 +26,15 @@ export async function runWeeklyPlanning(): Promise<{
   const research = await runResearchAgent(end.toISOString().slice(0, 10));
 
   // 3. Produce 3 posts from the top research topics (relevance-ranked).
+  //    Instagram-first mix: 1 carousel (pillar) + 1 stories + 1 post_unico.
   const top = [...research.topics].sort((a, b) => b.relevance - a.relevance).slice(0, 3);
+  const mix: ContentType[] = ["carousel", "stories", "post_unico"];
 
   const generated: string[] = [];
-  for (const t of top) {
+  for (let i = 0; i < top.length; i++) {
+    const t = top[i]!;
     const result = await runContentAgent({
-      type: "linkedin",
+      type: mix[i] ?? "post_unico",
       briefing: `Tópico: ${t.topic}\nResumo: ${t.summary}\nFonte: ${t.source_url}`,
       persist: true,
     });

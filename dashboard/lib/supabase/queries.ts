@@ -90,6 +90,38 @@ export type Okr = {
   created_at: string
 }
 
+// Mirrors the WeeklyPlanOutput from agents/agents/research-weekly-agent.ts.
+export type WeeklyPlanData = {
+  week_of: string
+  theme: string
+  market_gaps: Array<{ gap: string; evidence: string; why_now: string }>
+  angles: Array<{
+    angle: string
+    thesis: string
+    best_format: "carousel" | "stories" | "post_unico"
+    risk: string
+  }>
+  weekly_plan: {
+    pillar: { title: string; format: "carousel"; angle_ref: string }
+    satellites: Array<{
+      title: string
+      format: "stories" | "post_unico"
+      angle_ref: string
+    }>
+  }
+  narrative_risks: string[]
+}
+
+export type WeeklyPlan = {
+  id: string
+  week_of: string
+  theme: string
+  plan: WeeklyPlanData
+  status: string
+  approved_at: string | null
+  created_at: string
+}
+
 // ─── Briefs ───────────────────────────────────────────────────────────────────
 
 export async function getLatestBrief(): Promise<Brief | null> {
@@ -252,6 +284,29 @@ export async function getMRRCurrentMonth(): Promise<number> {
     .gte("date", start)
     .lte("date", end)
   return (data ?? []).reduce((sum, r) => sum + r.amount, 0)
+}
+
+// ─── Weekly plans ─────────────────────────────────────────────────────────────
+
+export async function getPendingWeeklyPlans(): Promise<WeeklyPlan[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("weekly_plans")
+    .select("*")
+    .eq("status", "pending")
+    .order("week_of", { ascending: false })
+  return data ?? []
+}
+
+export async function getLatestWeeklyPlan(): Promise<WeeklyPlan | null> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("weekly_plans")
+    .select("*")
+    .order("week_of", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data
 }
 
 // ─── OKRs ─────────────────────────────────────────────────────────────────────

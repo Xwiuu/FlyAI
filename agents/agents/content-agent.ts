@@ -5,12 +5,15 @@ import { extractJson } from "../lib/json.js";
 import { logAgent } from "../lib/logger.js";
 import { serviceClient } from "../lib/supabase.js";
 
-export type ContentType = "linkedin" | "instagram" | "carousel";
+export type ContentType = "carousel" | "stories" | "post_unico";
 
 const ContentSchema = z.object({
-  type: z.enum(["linkedin", "instagram", "carousel"]),
+  type: z.enum(["carousel", "stories", "post_unico"]),
   title: z.string().min(1),
-  content: z.union([z.string().min(1), z.array(z.string().min(1)).min(3)]),
+  hook: z.string().min(1),
+  // carousel: 5–8 slides | stories: 3–5 frames | post_unico: string
+  body: z.union([z.string().min(1), z.array(z.string().min(1)).min(3).max(8)]),
+  call_to_action: z.string().min(1),
   hashtags: z.array(z.string()).max(5).default([]),
   rationale: z.string().min(1),
 });
@@ -33,13 +36,14 @@ export interface ContentResult {
 
 function skillForType(type: ContentType): string {
   if (type === "carousel") return "instagram-carousel";
-  if (type === "instagram") return "instagram-carousel";
-  return "linkedin-post";
+  if (type === "stories") return "instagram-stories";
+  return "instagram-post-unico";
 }
 
 function serializeContent(out: ContentOutput): string {
-  if (Array.isArray(out.content)) return out.content.join("\n\n---\n\n");
-  return out.content;
+  const bodyText = Array.isArray(out.body) ? out.body.join("\n\n---\n\n") : out.body;
+  const tags = out.hashtags.length ? `\n\n${out.hashtags.join(" ")}` : "";
+  return `${out.hook}\n\n${bodyText}\n\n${out.call_to_action}${tags}`;
 }
 
 export async function runContentAgent(input: ContentInput): Promise<ContentResult> {
@@ -71,7 +75,7 @@ export async function runContentAgent(input: ContentInput): Promise<ContentResul
     system,
     prompt,
     temperature: 0.6,
-    maxTokens: 2048,
+    maxTokens: 4096,
   });
 
   let parsed: ContentOutput;

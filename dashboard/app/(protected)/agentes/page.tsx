@@ -1,15 +1,22 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ModuleHeader } from "@/components/dashboard/module-header"
 import { AgentStatusTile } from "@/components/agents/agent-status-tile"
-import { PostsQueue, BriefsQueue } from "@/components/agents/approval-queue"
+import { PostsQueue, BriefsQueue, WeeklyPlansQueue } from "@/components/agents/approval-queue"
 import { Badge } from "@/components/ui/badge"
 import {
   getPendingPosts,
   getPendingBriefs,
+  getPendingWeeklyPlans,
   getLastRunPerAgent,
   getAgentLogs,
 } from "@/lib/supabase/queries"
-import { approvePost, rejectPost, approveBrief } from "@/app/(protected)/agentes/actions"
+import {
+  approvePost,
+  rejectPost,
+  approveBrief,
+  approveWeeklyPlan,
+  archiveWeeklyPlan,
+} from "@/app/(protected)/agentes/actions"
 import { formatRelative } from "@/lib/format"
 import { StatusPill } from "@/components/dashboard/status-pill"
 
@@ -18,17 +25,18 @@ export const dynamic = "force-dynamic"
 const AGENTS = ["ceo", "research", "content", "analytics"] as const
 
 // Pass server actions explicitly — avoids closure issues with client boundaries
-const actions = { approvePost, rejectPost, approveBrief }
+const actions = { approvePost, rejectPost, approveBrief, approveWeeklyPlan, archiveWeeklyPlan }
 
 export default async function AgentesPage() {
-  const [pendingPosts, pendingBriefs, lastRuns, recentLogs] = await Promise.all([
+  const [pendingPosts, pendingBriefs, pendingPlans, lastRuns, recentLogs] = await Promise.all([
     getPendingPosts(),
     getPendingBriefs(),
+    getPendingWeeklyPlans(),
     getLastRunPerAgent(),
     getAgentLogs(30),
   ])
 
-  const pendingCount = pendingPosts.length + pendingBriefs.length
+  const pendingCount = pendingPosts.length + pendingBriefs.length + pendingPlans.length
 
   return (
     <div className="space-y-8">
@@ -74,6 +82,14 @@ export default async function AgentesPage() {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="planejamento">
+              Planejamento
+              {pendingPlans.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-400">
+                  {pendingPlans.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="historico">Histórico</TabsTrigger>
           </TabsList>
 
@@ -83,6 +99,10 @@ export default async function AgentesPage() {
 
           <TabsContent value="briefs">
             <BriefsQueue briefs={pendingBriefs} actions={actions} />
+          </TabsContent>
+
+          <TabsContent value="planejamento">
+            <WeeklyPlansQueue plans={pendingPlans} actions={actions} />
           </TabsContent>
 
           <TabsContent value="historico">

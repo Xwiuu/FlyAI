@@ -3,16 +3,25 @@
 import { useOptimistic, useTransition } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { PostApprovalItem, BriefApprovalItem } from "@/components/agents/approval-item"
+import { WeeklyPlanCard } from "@/components/agents/weekly-plan-card"
 import { EmptyModule } from "@/components/dashboard/empty-module"
-import { CheckSquare } from "lucide-react"
+import { CheckSquare, CalendarDays } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import type { Post, Brief } from "@/lib/supabase/queries"
-import type { approvePost, rejectPost, approveBrief } from "@/app/(protected)/agentes/actions"
+import type { Post, Brief, WeeklyPlan } from "@/lib/supabase/queries"
+import type {
+  approvePost,
+  rejectPost,
+  approveBrief,
+  approveWeeklyPlan,
+  archiveWeeklyPlan,
+} from "@/app/(protected)/agentes/actions"
 
 type Actions = {
   approvePost: typeof approvePost
   rejectPost: typeof rejectPost
   approveBrief: typeof approveBrief
+  approveWeeklyPlan: typeof approveWeeklyPlan
+  archiveWeeklyPlan: typeof archiveWeeklyPlan
 }
 
 // ─── Posts Queue ──────────────────────────────────────────────────────────────
@@ -114,6 +123,72 @@ export function BriefsQueue({ briefs, actions }: { briefs: Brief[]; actions: Act
             key={brief.id}
             brief={brief}
             onApprove={handleApprove}
+            isPending={false}
+          />
+        ))}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ─── Weekly Plans Queue ───────────────────────────────────────────────────────
+
+export function WeeklyPlansQueue({
+  plans,
+  actions,
+}: {
+  plans: WeeklyPlan[]
+  actions: Actions
+}) {
+  const [optimisticPlans, removePlan] = useOptimistic(
+    plans,
+    (state: WeeklyPlan[], removedId: string) => state.filter((p) => p.id !== removedId),
+  )
+  const [, startTransition] = useTransition()
+
+  const handleApprove = (id: string) => {
+    startTransition(async () => {
+      removePlan(id)
+      const result = await actions.approveWeeklyPlan(id)
+      if (!result.ok) {
+        toast({ title: "Erro ao aprovar plano", description: result.error, variant: "destructive" })
+      } else {
+        toast({ title: "Plano aprovado", description: "Planejamento semanal aprovado." })
+      }
+    })
+  }
+
+  const handleArchive = (id: string) => {
+    startTransition(async () => {
+      removePlan(id)
+      const result = await actions.archiveWeeklyPlan(id)
+      if (!result.ok) {
+        toast({ title: "Erro ao arquivar", description: result.error, variant: "destructive" })
+      } else {
+        toast({ title: "Plano arquivado" })
+      }
+    })
+  }
+
+  if (optimisticPlans.length === 0) {
+    return (
+      <EmptyModule
+        title="Nenhum planejamento pendente"
+        description="O Research Agent não gerou plano semanal pendente. Rode o workflow research-weekly para gerar um."
+        icon={<CalendarDays className="h-8 w-8" />}
+      />
+    )
+  }
+
+  return (
+    <motion.div layout className="flex flex-col gap-4">
+      <AnimatePresence mode="popLayout">
+        {optimisticPlans.map((plan) => (
+          <WeeklyPlanCard
+            key={plan.id}
+            weeklyPlan={plan}
+            onApprove={handleApprove}
+            onArchive={handleArchive}
             isPending={false}
           />
         ))}

@@ -28,8 +28,9 @@ export async function runContentProduction(input: ContentProductionInput) {
 
 if (isMain(import.meta.url)) {
   runCli("content-production", async () => {
-    const briefing = process.env.BRIEFING ?? "Gere um post sobre orquestração de agentes em SaaS B2B.";
-    const type = (process.env.CONTENT_TYPE as ContentType | undefined) ?? "linkedin";
+    const briefing = process.env.BRIEFING ?? "Gere um post visual sobre orquestração de agentes em SaaS B2B.";
+    // Instagram-first. Override with CONTENT_TYPE=stories|carousel if needed.
+    const type = (process.env.CONTENT_TYPE as ContentType | undefined) ?? "post_unico";
     return runContentProduction({ type, briefing, notifyDiscord: true });
   });
 }
