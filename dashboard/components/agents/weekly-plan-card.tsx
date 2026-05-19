@@ -10,43 +10,19 @@ import {
   AlertTriangle,
   Anchor,
   Orbit,
-  AlignLeft,
-  Layers,
-  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatRelative } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { WeeklyPlan } from "@/lib/supabase/queries"
-
-const FORMAT_ICON: Record<string, React.ElementType> = {
-  carousel: AlignLeft,
-  stories: Zap,
-  post_unico: Layers,
-}
-
-const FORMAT_LABEL: Record<string, string> = {
-  carousel: "Carrossel",
-  stories: "Stories",
-  post_unico: "Post Único",
-}
+import { FormatChip } from "@/components/agents/post-format-chip"
 
 interface WeeklyPlanCardProps {
   weeklyPlan: WeeklyPlan
   onApprove: (id: string) => void
   onArchive: (id: string) => void
   isPending: boolean
-}
-
-function FormatChip({ format }: { format: string }) {
-  const Icon = FORMAT_ICON[format] ?? AlignLeft
-  return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-      <Icon className="h-2.5 w-2.5" />
-      {FORMAT_LABEL[format] ?? format}
-    </span>
-  )
 }
 
 function SectionTitle({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
