@@ -22,6 +22,7 @@ export type Post = {
   approved_at: string | null
   approved_by: string | null
   published_at: string | null
+  metadata?: Record<string, unknown> | null
 }
 
 export type Metric = {
@@ -381,6 +382,42 @@ export async function getMeetingMessages(meeting_id: string): Promise<MeetingMes
     .eq("meeting_id", meeting_id)
     .order("sequence", { ascending: true })
   return (data as MeetingMessage[] | null) ?? []
+}
+
+export async function getLatestCompletedWeeklyPlanningMeeting(): Promise<Meeting | null> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("agent_meetings")
+    .select("*")
+    .eq("type", "weekly_planning")
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  return (data as Meeting | null) ?? null
+}
+
+export async function getPostsBySourceMeeting(meetingId: string): Promise<Post[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("posts")
+    .select("*")
+    .eq("metadata->>source_meeting_id", meetingId)
+    .order("created_at", { ascending: true })
+  return (data as Post[] | null) ?? []
+}
+
+export async function inferTeseCentral(meetingId: string): Promise<string | null> {
+  const messages = await getMeetingMessages(meetingId)
+  const ceoMsg = messages.find(
+    (m) => m.sender === "ceo_agent" && /tese central/i.test(m.content),
+  )
+  if (!ceoMsg) return null
+  const match = ceoMsg.content.match(
+    /tese central[^\n:]*[:\-–]\s*([^\n]+(?:\n(?!\s*\n)[^\n]+)*)/i,
+  )
+  if (!match || !match[1]) return null
+  return match[1].trim().replace(/^\*+|\*+$/g, "").trim()
 }
 
 // ─── Derived / computed ───────────────────────────────────────────────────────
