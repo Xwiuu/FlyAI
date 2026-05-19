@@ -3,6 +3,12 @@ import { loadSystemPrompt } from "../lib/prompts.js";
 import { logAgent } from "../lib/logger.js";
 import { serviceClient } from "../lib/supabase.js";
 import { assertEquals, safeRate, safeSum } from "../lib/math.js";
+import { postCrisisAlert } from "../lib/discord.js";
+
+/** Minimum acceptable engagement/reach ratio for Instagram. Below this, a
+ *  crisis embed is dispatched. Kept conservative — false positives are
+ *  cheaper than missing a real drop. */
+const INSTAGRAM_CONVERSION_FLOOR = 0.005;
 
 type Platform = "instagram" | "linkedin";
 
@@ -104,6 +110,10 @@ export async function runAnalyticsAgent(opts: {
     });
   }
 
+  // -- Anomaly detection: dispatch red Discord alert when something is on fire.
+  //    Threshold: Instagram conversion < 0.5% OR integrity check failed.
+  await detectAndAlertAnomalies({ per_platform, integrity_ok, integrity_notes, startIso, endIso });
+
   // Build the input for the LLM (structured, pre-validated).
   const briefing = {
     window: { start: startIso, end: endIso },
@@ -151,4 +161,54 @@ export async function runAnalyticsAgent(opts: {
     per_platform,
     markdown: res.text,
   };
+}
+
+interface AnomalyContext {
+  per_platform: PlatformAggregate[];
+  integrity_ok: boolean;
+  integrity_notes: string[];
+  startIso: string;
+  endIso: string;
+}
+
+async function detectAndAlertAnomalies(ctx: AnomalyContext): Promise<void> {
+  const anomalies: string[] = [];
+  const ig = ctx.per_platform.find((p) => p.platform === "instagram");
+
+  if (ig && ig.conversion_rate !== null && ig.conversion_rate < INSTAGRAM_CONVERSION_FLOOR) {
+    anomalies.push(
+      `Instagram conversion rate ${(ig.conversion_rate * 100).toFixed(2)}% < ${(INSTAGRAM_CONVERSION_FLOOR * 100).toFixed(1)}% threshold`,
+    );
+  }
+
+  if (!ctx.integrity_ok) {
+    anomalies.push(
+      `Integridade de métricas falhou — ${ctx.integrity_notes.length} inconsistência(s)`,
+    );
+  }
+
+  if (anomalies.length === 0) return;
+
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  await postCrisisAlert({
+    title: "Anomalia detectada — Instagram",
+    summary: anomalies.map((a) => `• ${a}`).join("\n"),
+    fields: [
+      {
+        name: "Janela",
+        value: `${ctx.startIso.slice(0, 10)} → ${ctx.endIso.slice(0, 10)}`,
+        inline: true,
+      },
+      { name: "Reach", value: String(ig?.totals["reach"] ?? 0), inline: true },
+      { name: "Engagement", value: String(ig?.totals["engagement"] ?? 0), inline: true },
+    ],
+    link: appUrl ? `${appUrl}/agentes` : undefined,
+  });
+
+  await logAgent({
+    agent: "analytics",
+    action: "analytics.crisis_alert",
+    status: "success",
+    output: anomalies.join("; "),
+  });
 }

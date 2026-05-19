@@ -1,6 +1,13 @@
 import { serviceClient } from "./supabase.js";
 
-export type AgentName = "research" | "content" | "analytics" | "ceo" | "router";
+export type AgentName =
+  | "research"
+  | "content"
+  | "analytics"
+  | "ceo"
+  | "router"
+  | "devils_advocate"
+  | "meeting";
 export type LogStatus = "success" | "error" | "pending";
 
 export interface LogEntry {

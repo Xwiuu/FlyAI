@@ -321,6 +321,68 @@ export async function getActiveOkrs(): Promise<Okr[]> {
   return data ?? []
 }
 
+// ─── Meetings ─────────────────────────────────────────────────────────────────
+
+export type MeetingType = "weekly_planning" | "crisis" | "content_review" | "ad_hoc"
+export type MeetingStatus = "active" | "awaiting_user" | "completed" | "archived"
+export type MeetingSender =
+  | "user"
+  | "research_agent"
+  | "content_agent"
+  | "ceo_agent"
+  | "analytics_agent"
+  | "devils_advocate"
+
+export type Meeting = {
+  id: string
+  title: string
+  type: MeetingType
+  status: MeetingStatus
+  created_at: string
+  completed_at: string | null
+}
+
+export type MeetingMessage = {
+  id: string
+  meeting_id: string
+  sender: MeetingSender
+  role: "user" | "assistant" | "system"
+  content: string
+  sequence: number
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export async function listMeetings(limit = 30): Promise<Meeting[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("agent_meetings")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  return (data as Meeting[] | null) ?? []
+}
+
+export async function getMeeting(id: string): Promise<Meeting | null> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("agent_meetings")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+  return (data as Meeting | null) ?? null
+}
+
+export async function getMeetingMessages(meeting_id: string): Promise<MeetingMessage[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("meeting_messages")
+    .select("*")
+    .eq("meeting_id", meeting_id)
+    .order("sequence", { ascending: true })
+  return (data as MeetingMessage[] | null) ?? []
+}
+
 // ─── Derived / computed ───────────────────────────────────────────────────────
 
 export async function getWeightedPipeline(): Promise<number> {

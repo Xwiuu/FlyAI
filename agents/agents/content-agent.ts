@@ -7,17 +7,36 @@ import { serviceClient } from "../lib/supabase.js";
 
 export type ContentType = "carousel" | "stories" | "post_unico";
 
+export const HookSchema = z.object({
+  variant: z.enum(["medo_perda", "dados_frios", "ironia_mercado"]),
+  text: z.string().min(1),
+});
+
+export const AudioVisualCueSchema = z.object({
+  frame: z.number().int().min(1),
+  visual_cue: z.string().min(1),
+  audio_cue: z.string().min(1),
+});
+
 const ContentSchema = z.object({
   type: z.enum(["carousel", "stories", "post_unico"]),
   title: z.string().min(1),
-  hook: z.string().min(1),
+  // Matriz obrigatória: 3 variantes (medo_perda, dados_frios, ironia_mercado).
+  // O hook publicado é hooks[0].text; os demais ficam em metadata para A/B.
+  hooks: z.array(HookSchema).length(3),
   // carousel: 5–8 slides | stories: 3–5 frames | post_unico: string
   body: z.union([z.string().min(1), z.array(z.string().min(1)).min(3).max(8)]),
+  // Frame-a-frame de Reels/Stories. Optional para post_unico estático.
+  audio_visual_cues: z.array(AudioVisualCueSchema).optional(),
+  // Prompt cinematográfico para gerador de imagem (Midjourney v6 / Flux).
+  visual_direction: z.string().min(1),
   call_to_action: z.string().min(1),
   hashtags: z.array(z.string()).max(5).default([]),
   rationale: z.string().min(1),
 });
 
+export type Hook = z.infer<typeof HookSchema>;
+export type AudioVisualCue = z.infer<typeof AudioVisualCueSchema>;
 export type ContentOutput = z.infer<typeof ContentSchema>;
 
 export interface ContentInput {
@@ -27,6 +46,8 @@ export interface ContentInput {
   skill?: string;
   /** When true, persists the result as a pending post and returns its id. */
   persist?: boolean;
+  /** Disable the Devil's Advocate critique pass (default: enabled). */
+  skipDevilsAdvocate?: boolean;
 }
 
 export interface ContentResult {
@@ -43,7 +64,8 @@ function skillForType(type: ContentType): string {
 function serializeContent(out: ContentOutput): string {
   const bodyText = Array.isArray(out.body) ? out.body.join("\n\n---\n\n") : out.body;
   const tags = out.hashtags.length ? `\n\n${out.hashtags.join(" ")}` : "";
-  return `${out.hook}\n\n${bodyText}\n\n${out.call_to_action}${tags}`;
+  // Canonical hook = primeira variante. As outras 2 ficam em metadata para A/B futuro.
+  return `${out.hooks[0]!.text}\n\n${bodyText}\n\n${out.call_to_action}${tags}`;
 }
 
 export async function runContentAgent(input: ContentInput): Promise<ContentResult> {
@@ -104,6 +126,16 @@ export async function runContentAgent(input: ContentInput): Promise<ContentResul
     tokens_used: res.tokens_used,
   });
 
+  // Devil's Advocate critique pass — concatenates skeptical critique into rationale.
+  if (!input.skipDevilsAdvocate) {
+    const { runDevilsAdvocate } = await import("./devils-advocate.js");
+    const da = await runDevilsAdvocate({ draft: parsed, topic_briefing: input.briefing });
+    if (da.critiques.length > 0) {
+      const bullets = da.critiques.map((c) => `- ${c}`).join("\n");
+      parsed.rationale = `${parsed.rationale}\n\n**Crítica cética (Advogado do Diabo — ${da.verdict}):**\n${bullets}`;
+    }
+  }
+
   if (!input.persist) return { output: parsed };
 
   const supabase = serviceClient();
@@ -114,6 +146,7 @@ export async function runContentAgent(input: ContentInput): Promise<ContentResul
       type: parsed.type,
       content: serializeContent(parsed),
       status: "pending",
+      metadata: parsed,
     })
     .select("id")
     .single();

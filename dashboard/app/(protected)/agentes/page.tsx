@@ -1,3 +1,5 @@
+import Link from "next/link"
+import type { Route } from "next"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ModuleHeader } from "@/components/dashboard/module-header"
 import { AgentStatusTile } from "@/components/agents/agent-status-tile"
@@ -45,9 +47,17 @@ export default async function AgentesPage() {
         title="Time de agentes"
         description="Status, fila de aprovações e histórico de execução."
         actions={
-          pendingCount > 0 ? (
-            <Badge variant="pending">{pendingCount} pendente{pendingCount !== 1 ? "s" : ""}</Badge>
-          ) : undefined
+          <div className="flex items-center gap-3">
+            {pendingCount > 0 && (
+              <Badge variant="pending">{pendingCount} pendente{pendingCount !== 1 ? "s" : ""}</Badge>
+            )}
+            <Link
+              href={"/agentes/meetings" as Route}
+              className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Salas de reunião →
+            </Link>
+          </div>
         }
       />
 
