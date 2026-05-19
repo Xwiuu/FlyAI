@@ -67,7 +67,7 @@ export default async function MeetingsListPage() {
             {active.map((m) => (
               <Link
                 key={m.id}
-                href={`/agentes/meetings/${m.id}` as never}
+                href={`/agentes/meetings/${m.id}`}
                 className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/40"
               >
                 <div className="min-w-0 flex-1">
@@ -99,7 +99,7 @@ export default async function MeetingsListPage() {
             {finished.map((m) => (
               <Link
                 key={m.id}
-                href={`/agentes/meetings/${m.id}` as never}
+                href={`/agentes/meetings/${m.id}`}
                 className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/40"
               >
                 <div className="min-w-0 flex-1">

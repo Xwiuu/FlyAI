@@ -57,8 +57,14 @@ function KeyResult({
   )
 }
 
+function isValidKR(kr: unknown): kr is { title: string; target: number; current: number; unit: string } {
+  if (!kr || typeof kr !== "object") return false
+  const k = kr as Record<string, unknown>
+  return typeof k.title === "string" && typeof k.target === "number" && typeof k.current === "number" && typeof k.unit === "string"
+}
+
 function OkrCard({ okr, delay }: { okr: Okr; delay: number }) {
-  const krs = okr.key_results ?? []
+  const krs = (okr.key_results ?? []).filter(isValidKR)
   const avgPct =
     krs.length > 0
       ? Math.round(

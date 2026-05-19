@@ -171,7 +171,7 @@ export default async function OverviewPage() {
         <section>
           <ModuleHeader eyebrow="Fleet" title="Status dos agentes" className="mb-4" />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {AGENTS.map((agent, i) => (
+            {AGENTS.map((agent) => (
               <AgentStatusTile
                 key={agent}
                 agent={agent}

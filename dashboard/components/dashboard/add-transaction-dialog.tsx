@@ -121,7 +121,10 @@ export function AddTransactionDialog({ label = "Adicionar transação" }: AddTra
               <select
                 id="type"
                 value={type}
-                onChange={(e) => setType(e.target.value as "income" | "expense")}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === "income" || v === "expense") setType(v)
+                }}
                 disabled={isPending}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >

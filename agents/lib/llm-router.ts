@@ -54,8 +54,7 @@ const OFFLINE_FALLBACK_NOTICE = `
 O provider de busca web está indisponível (503 / timeout). Você está rodando SEM acesso à internet.
 Regras de degradação:
 1. Use seu conhecimento de treinamento para preencher os campos de conteúdo com o melhor dado disponível.
-2. Para campos que exigem URL (source_url, evidence, etc.), use o formato:
-   https://offline-fallback.source/<slug-descritivo>  (ex: https://offline-fallback.source/gartner-agentic-ai-2025)
+2. Para campos que exigem URL (source_url, evidence, etc.), use a string literal "offline://no-source" — nunca fabrique URLs https:// que pareçam reais.
 3. Quando aplicável, marque stale: true nos tópicos.
 4. NÃO omita nenhum campo obrigatório do schema — o contrato do banco deve ser preservado.
 5. Retorne JSON válido conforme o schema definido, sem markdown wrapping.

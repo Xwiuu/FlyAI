@@ -54,7 +54,7 @@ export function NewMeetingForm() {
         setError(res.error)
         return
       }
-      if (res.data?.id) router.push(`/agentes/meetings/${res.data.id}` as never)
+      if (res.data?.id) router.push(`/agentes/meetings/${res.data.id}`)
     })
   }
 
@@ -97,6 +97,7 @@ export function NewMeetingForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Ex: Pilar da semana — quebra de margem"
+          maxLength={200}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
@@ -109,6 +110,7 @@ export function NewMeetingForm() {
           value={opening}
           onChange={(e) => setOpening(e.target.value)}
           rows={3}
+          maxLength={2000}
           placeholder="Contexto que os agentes devem ler antes do primeiro turno."
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
         />

@@ -10,7 +10,6 @@ import {
   Megaphone,
   Target,
   Bot,
-  BarChart3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -20,7 +19,6 @@ const MODULES = [
   { label: "Comercial", href: "/comercial", icon: TrendingUp },
   { label: "Clientes", href: "/clientes", icon: Users },
   { label: "Marketing", href: "/marketing", icon: Megaphone },
-  { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "OKRs", href: "/okrs", icon: Target },
   { label: "Agentes", href: "/agentes", icon: Bot },
 ]

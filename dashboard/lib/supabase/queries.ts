@@ -221,10 +221,23 @@ export async function getAgentLogs(limit = 40): Promise<AgentLog[]> {
 }
 
 export async function getLastRunPerAgent(): Promise<Record<string, AgentLog>> {
-  const logs = await getAgentLogs(100)
+  const supabase = createClient()
+  const agents = ["ceo", "research", "content", "analytics"]
+  const results = await Promise.all(
+    agents.map((agent) =>
+      supabase
+        .from("agent_logs")
+        .select("*")
+        .eq("agent", agent)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  )
   const map: Record<string, AgentLog> = {}
-  for (const log of logs) {
-    if (!map[log.agent]) map[log.agent] = log
+  for (let i = 0; i < agents.length; i++) {
+    const row = results[i]?.data
+    if (row) map[agents[i]!] = row as AgentLog
   }
   return map
 }
@@ -263,12 +276,13 @@ export async function getPipeline(): Promise<PipelineItem[]> {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-export async function getTransactions(): Promise<Transaction[]> {
+export async function getTransactions(limit = 200): Promise<Transaction[]> {
   const supabase = createClient()
   const { data } = await supabase
     .from("transactions")
     .select("*")
     .order("date", { ascending: false })
+    .limit(limit)
   return data ?? []
 }
 
@@ -358,43 +372,43 @@ export async function listMeetings(limit = 30): Promise<Meeting[]> {
   const supabase = createClient()
   const { data } = await supabase
     .from("agent_meetings")
-    .select("*")
+    .select("id, title, type, status, created_at, completed_at")
     .order("created_at", { ascending: false })
     .limit(limit)
-  return (data as Meeting[] | null) ?? []
+  return (data ?? []) as Meeting[]
 }
 
 export async function getMeeting(id: string): Promise<Meeting | null> {
   const supabase = createClient()
   const { data } = await supabase
     .from("agent_meetings")
-    .select("*")
+    .select("id, title, type, status, created_at, completed_at")
     .eq("id", id)
     .maybeSingle()
-  return (data as Meeting | null) ?? null
+  return (data ?? null) as Meeting | null
 }
 
 export async function getMeetingMessages(meeting_id: string): Promise<MeetingMessage[]> {
   const supabase = createClient()
   const { data } = await supabase
     .from("meeting_messages")
-    .select("*")
+    .select("id, meeting_id, sender, role, content, sequence, metadata, created_at")
     .eq("meeting_id", meeting_id)
     .order("sequence", { ascending: true })
-  return (data as MeetingMessage[] | null) ?? []
+  return (data ?? []) as MeetingMessage[]
 }
 
 export async function getLatestCompletedWeeklyPlanningMeeting(): Promise<Meeting | null> {
   const supabase = createClient()
   const { data } = await supabase
     .from("agent_meetings")
-    .select("*")
+    .select("id, title, type, status, created_at, completed_at")
     .eq("type", "weekly_planning")
     .eq("status", "completed")
     .order("completed_at", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle()
-  return (data as Meeting | null) ?? null
+  return (data ?? null) as Meeting | null
 }
 
 export async function getPostsBySourceMeeting(meetingId: string): Promise<Post[]> {
@@ -404,7 +418,7 @@ export async function getPostsBySourceMeeting(meetingId: string): Promise<Post[]
     .select("*")
     .eq("metadata->>source_meeting_id", meetingId)
     .order("created_at", { ascending: true })
-  return (data as Post[] | null) ?? []
+  return (data ?? []) as Post[]
 }
 
 export async function inferTeseCentral(meetingId: string): Promise<string | null> {

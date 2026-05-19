@@ -19,24 +19,32 @@ export function LoginForm({ initialError }: { initialError?: string }) {
     initialError ? (ERROR_MESSAGES[initialError] ?? null) : null,
   );
   const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (signInError) {
-      setError("Credenciais inválidas.");
-      return;
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        setError("Credenciais inválidas.");
+        return;
+      }
+      startTransition(() => {
+        router.replace("/overview");
+        router.refresh();
+      });
+    } finally {
+      setLoading(false);
     }
-    startTransition(() => {
-      router.replace("/overview");
-      router.refresh();
-    });
   }
+
+  const busy = loading || isPending;
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
@@ -49,6 +57,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={busy}
         />
       </div>
       <div className="space-y-2">
@@ -60,6 +69,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={busy}
         />
       </div>
       {error && (
@@ -67,8 +77,8 @@ export function LoginForm({ initialError }: { initialError?: string }) {
           {error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "Autenticando..." : "Entrar"}
+      <Button type="submit" className="w-full" disabled={busy}>
+        {busy ? "Autenticando..." : "Entrar"}
       </Button>
     </form>
   );

@@ -42,7 +42,7 @@ export async function materializeMeetingPosts(
 
   if (existingErr) {
     console.error(`[materialize ${meetingId}] idempotency check failed:`, existingErr.message);
-    // Fall through — better to risk duplicates than to silently lose the bundle.
+    throw new Error(`materializeMeetingPosts: idempotency check failed — ${existingErr.message}`);
   } else if (existing && existing.length > 0) {
     return 0;
   }

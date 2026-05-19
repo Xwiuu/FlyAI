@@ -5,10 +5,23 @@ import { createClient } from "@/lib/supabase/server"
 
 export type ApproveResult = { ok: true } | { ok: false; error: string }
 
-export async function approvePost(id: string): Promise<ApproveResult> {
+async function requireAuthorized() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Não autenticado." }
+  if (!user) return null
+  const { data: authorized } = await supabase
+    .from("authorized_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle()
+  if (!authorized) return null
+  return user
+}
+
+export async function approvePost(id: string): Promise<ApproveResult> {
+  const supabase = createClient()
+  const user = await requireAuthorized()
+  if (!user) return { ok: false, error: "Não autorizado." }
 
   const { error } = await supabase
     .from("posts")
@@ -19,7 +32,10 @@ export async function approvePost(id: string): Promise<ApproveResult> {
     })
     .eq("id", id)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error("[approvePost] db error:", error.message)
+    return { ok: false, error: error.message }
+  }
   revalidatePath("/agentes")
   revalidatePath("/overview")
   return { ok: true }
@@ -27,15 +43,18 @@ export async function approvePost(id: string): Promise<ApproveResult> {
 
 export async function rejectPost(id: string): Promise<ApproveResult> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Não autenticado." }
+  const user = await requireAuthorized()
+  if (!user) return { ok: false, error: "Não autorizado." }
 
   const { error } = await supabase
     .from("posts")
     .update({ status: "rejected" })
     .eq("id", id)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error("[rejectPost] db error:", error.message)
+    return { ok: false, error: error.message }
+  }
   revalidatePath("/agentes")
   revalidatePath("/overview")
   return { ok: true }
@@ -43,8 +62,8 @@ export async function rejectPost(id: string): Promise<ApproveResult> {
 
 export async function approveBrief(id: string): Promise<ApproveResult> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Não autenticado." }
+  const user = await requireAuthorized()
+  if (!user) return { ok: false, error: "Não autorizado." }
 
   const { error } = await supabase
     .from("briefs")
@@ -54,7 +73,10 @@ export async function approveBrief(id: string): Promise<ApproveResult> {
     })
     .eq("id", id)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error("[approveBrief] db error:", error.message)
+    return { ok: false, error: error.message }
+  }
   revalidatePath("/agentes")
   revalidatePath("/overview")
   return { ok: true }
@@ -62,8 +84,8 @@ export async function approveBrief(id: string): Promise<ApproveResult> {
 
 export async function approveWeeklyPlan(id: string): Promise<ApproveResult> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Não autenticado." }
+  const user = await requireAuthorized()
+  if (!user) return { ok: false, error: "Não autorizado." }
 
   const { error } = await supabase
     .from("weekly_plans")
@@ -73,22 +95,28 @@ export async function approveWeeklyPlan(id: string): Promise<ApproveResult> {
     })
     .eq("id", id)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error("[approveWeeklyPlan] db error:", error.message)
+    return { ok: false, error: error.message }
+  }
   revalidatePath("/agentes")
   return { ok: true }
 }
 
 export async function archiveWeeklyPlan(id: string): Promise<ApproveResult> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Não autenticado." }
+  const user = await requireAuthorized()
+  if (!user) return { ok: false, error: "Não autorizado." }
 
   const { error } = await supabase
     .from("weekly_plans")
     .update({ status: "archived" })
     .eq("id", id)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error("[archiveWeeklyPlan] db error:", error.message)
+    return { ok: false, error: error.message }
+  }
   revalidatePath("/agentes")
   return { ok: true }
 }

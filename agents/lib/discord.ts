@@ -76,5 +76,5 @@ export async function postCrisisAlert(input: CrisisAlertInput): Promise<boolean>
 }
 
 export function approvalLink(focusId: string): string {
-  return `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/agentes?focus=${focusId}`;
+  return `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/agentes?focus=${encodeURIComponent(focusId)}`;
 }
