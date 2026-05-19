@@ -26,10 +26,16 @@ export async function loadBrandBible(): Promise<string> {
   return text;
 }
 
+export type SystemPromptName =
+  | "research"
+  | "research-weekly"
+  | "content"
+  | "analytics"
+  | "ceo"
+  | "devils-advocate";
+
 /** Returns the system prompt for an agent, prefixed with the shared brand rules. */
-export async function loadSystemPrompt(
-  agent: "research" | "research-weekly" | "content" | "analytics" | "ceo",
-): Promise<string> {
+export async function loadSystemPrompt(agent: SystemPromptName): Promise<string> {
   const [brand, body] = await Promise.all([
     read("system-prompts/_brand-rules.md"),
     read(`system-prompts/${agent}-agent.md`),

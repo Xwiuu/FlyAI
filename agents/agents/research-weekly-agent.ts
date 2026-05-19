@@ -4,6 +4,7 @@ import { loadSystemPrompt } from "../lib/prompts.js";
 import { extractJson } from "../lib/json.js";
 import { logAgent } from "../lib/logger.js";
 import { serviceClient } from "../lib/supabase.js";
+import { getTopPerformingPosts } from "../lib/performance.js";
 
 const WeeklyPlanSchema = z.object({
   week_of: z.string(),
@@ -63,16 +64,32 @@ export async function runResearchWeeklyAgent(
 ): Promise<WeeklyResearchResult> {
   const system = await loadSystemPrompt("research-weekly");
 
+  // Performance memory: ground new theses in what already converted.
+  const topPerformers = await getTopPerformingPosts({ limit: 5, sinceDays: 60 });
+  const learningBlock = topPerformers.length
+    ? [
+        "Posts campeões dos últimos 60 dias (referência de tom e ângulo — NÃO copie, use como evidência do que ressoou):",
+        ...topPerformers.map(
+          (p) =>
+            `- [${p.type} — ER ${(p.engagement_rate * 100).toFixed(1)}% — ${p.dm_clicks} DM clicks] ${p.content_excerpt}`,
+        ),
+        "",
+      ].join("\n")
+    : "";
+
   const prompt = [
     `Tema central: ${input.theme}`,
     `Semana (segunda-feira): ${input.weekOf}`,
     "",
+    learningBlock,
     "Use busca web ativa para mapear gaps e evidências dos últimos 14 dias.",
     "",
     "INSTRUÇÃO CRÍTICA DE FORMATO:",
     "Return ONLY raw JSON. No markdown, no code fences, no preamble. Start with { end with }.",
     "Respeite o schema do system prompt EXATAMENTE.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const res = await runLLM({
     task: "research",
