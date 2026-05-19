@@ -18,8 +18,10 @@ export default async function ClientesPage() {
   const mrrAtivo = active.reduce((s, c) => s + c.ticket, 0)
   const ticketMedio = active.length > 0 ? mrrAtivo / active.length : 0
 
-  const churnRate =
-    clients.length > 0 ? Math.round((churned.length / clients.length) * 100) : 0
+  // Churn rate = churned / (active + churned), i.e. clientes que já tiveram contrato.
+  // Exclui os pausados, que ainda podem voltar a ser ativos.
+  const everActive = active.length + churned.length
+  const churnRate = everActive > 0 ? Math.round((churned.length / everActive) * 100) : 0
 
   return (
     <div className="space-y-8">
@@ -60,10 +62,10 @@ export default async function ClientesPage() {
               delay={0.1}
             />
             <KpiCard
-              label="Churn rate"
+              label="Churn rate histórico"
               value={`${churnRate}%`}
-              sub={`${churned.length} cliente${churned.length !== 1 ? "s" : ""} churned`}
-              trend={churnRate > 10 ? "down" : "neutral"}
+              sub={`${churned.length} de ${everActive} cliente${everActive !== 1 ? "s" : ""} churned`}
+              trend={churnRate > 20 ? "down" : "neutral"}
               delay={0.15}
             />
           </div>

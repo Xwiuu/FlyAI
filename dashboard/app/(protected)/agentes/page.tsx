@@ -87,7 +87,7 @@ export default async function AgentesPage() {
         <p className="mb-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           Fila de aprovação
         </p>
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
           <AgentsTabs
             pendingPosts={pendingPosts}
             pendingBriefs={pendingBriefs}

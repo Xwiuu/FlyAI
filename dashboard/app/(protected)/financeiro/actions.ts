@@ -18,6 +18,13 @@ export async function addTransaction(payload: {
 
   if (!user) return { ok: false, error: "Não autenticado." }
 
+  const { data: authorized } = await supabase
+    .from("authorized_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle()
+  if (!authorized) return { ok: false, error: "Não autorizado." }
+
   const { error } = await supabase.from("transactions").insert({
     description: payload.description,
     amount: payload.amount,
@@ -26,7 +33,10 @@ export async function addTransaction(payload: {
     category: null,
   })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error("[addTransaction] db error:", error.message)
+    return { ok: false, error: error.message }
+  }
 
   revalidatePath("/financeiro")
   revalidatePath("/overview")

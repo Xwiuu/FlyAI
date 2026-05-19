@@ -81,16 +81,20 @@ export async function appendMessage(input: {
 }): Promise<MeetingMessageRow> {
   const supabase = serviceClient();
 
-  // sequence = MAX(sequence) + 1 — read-then-write (single user system, no race).
-  const { data: maxRow } = await supabase
-    .from("meeting_messages")
-    .select("sequence")
-    .eq("meeting_id", input.meeting_id)
-    .order("sequence", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Read-then-write for sequence. A unique constraint on (meeting_id, sequence)
+  // in the DB is the correct long-term fix; this retries once on conflict.
+  const getNextSeq = async () => {
+    const { data: maxRow } = await supabase
+      .from("meeting_messages")
+      .select("sequence")
+      .eq("meeting_id", input.meeting_id)
+      .order("sequence", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return ((maxRow?.sequence as number | undefined) ?? 0) + 1;
+  };
 
-  const sequence = ((maxRow?.sequence as number | undefined) ?? 0) + 1;
+  const sequence = await getNextSeq();
 
   const { data, error } = await supabase
     .from("meeting_messages")
@@ -105,9 +109,21 @@ export async function appendMessage(input: {
     .select("id, meeting_id, sender, role, content, sequence, metadata, created_at")
     .single();
 
-  if (error || !data) {
-    throw new Error(`meetings.appendMessage: ${error?.message ?? "no row returned"}`);
+  if (error) {
+    // Retry once on duplicate sequence (race between polling and concurrent action).
+    if (error.code === "23505") {
+      const retrySeq = await getNextSeq();
+      const { data: retryData, error: retryError } = await supabase
+        .from("meeting_messages")
+        .insert({ meeting_id: input.meeting_id, sender: input.sender, role: input.role, content: input.content, sequence: retrySeq, metadata: input.metadata ?? null })
+        .select("id, meeting_id, sender, role, content, sequence, metadata, created_at")
+        .single();
+      if (retryError || !retryData) throw new Error(`meetings.appendMessage retry: ${retryError?.message ?? "no row"}`);
+      return retryData as unknown as MeetingMessageRow;
+    }
+    throw new Error(`meetings.appendMessage: ${error.message}`);
   }
+  if (!data) throw new Error("meetings.appendMessage: no row returned");
   return data as unknown as MeetingMessageRow;
 }
 

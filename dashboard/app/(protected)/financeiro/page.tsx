@@ -46,7 +46,8 @@ export default async function FinanceiroPage() {
     })
     .reduce((s, t) => s + t.amount, 0)
 
-  const runwayMonths = monthlyBurn > 0 ? Math.floor(balance / monthlyBurn) : null
+  const runwayMonths = monthlyBurn > 0 ? Math.max(0, Math.floor(balance / monthlyBurn)) : null
+  const insolvent = monthlyBurn > 0 && balance < 0
 
   return (
     <div className="space-y-8">
@@ -81,14 +82,16 @@ export default async function FinanceiroPage() {
           delay={0.1}
         />
         <KpiCard
-          label={runwayMonths !== null ? `Runway — ${runwayMonths} meses` : "Runway"}
+          label={insolvent ? "⚠ Runway — saldo negativo" : runwayMonths !== null ? `Runway — ${runwayMonths} meses` : "Runway"}
           value={formatBRLCompact(balance)}
           sub={
-            runwayMonths !== null
+            insolvent
+              ? "Despesas históricas superam receitas"
+              : runwayMonths !== null
               ? `Baseado no burn de ${formatBRLCompact(monthlyBurn)}/mês`
               : "Sem burn registrado este mês"
           }
-          trend={balance >= 0 ? "up" : "down"}
+          trend={insolvent ? "down" : balance >= 0 ? "up" : "down"}
           delay={0.15}
         />
       </div>

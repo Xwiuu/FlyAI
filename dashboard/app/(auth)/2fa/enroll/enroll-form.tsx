@@ -76,12 +76,17 @@ export function EnrollForm() {
 
   return (
     <div className="space-y-6">
-      <div
-        className="rounded-md border bg-white p-4"
-        dangerouslySetInnerHTML={{ __html: enroll.qrSvg }}
-      />
-      <p className="text-xs text-muted-foreground break-all">
-        Secret: <span className="font-mono">{enroll.secret}</span>
+      {/* Render QR as an img data-URL so inline scripts in the SVG cannot execute */}
+      <div className="rounded-md border bg-white p-4 flex justify-center">
+        <img
+          src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(enroll.qrSvg)}`}
+          alt="QR Code para autenticador 2FA"
+          className="h-48 w-48"
+        />
+      </div>
+      <p className="text-xs text-muted-foreground break-all select-none">
+        Secret (não compartilhe):{" "}
+        <span className="font-mono">{enroll.secret}</span>
       </p>
       <form onSubmit={onVerify} className="space-y-4">
         <div className="space-y-2">

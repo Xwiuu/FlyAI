@@ -150,8 +150,10 @@ export default async function MarketingPage() {
           <div className="rounded-xl border border-dashed border-border px-8 py-16 text-center">
             <p className="text-sm font-medium">Plano semanal</p>
             <p className="mt-2 text-xs text-muted-foreground max-w-xs mx-auto">
-              O weekly planning workflow ainda não gerou um plano esta semana. Rode manualmente via{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-[10px]">pnpm tsx agents/workflows/weekly-planning.ts</code>
+              Nenhum plano semanal gerado ainda. Inicie um planejamento semanal na{" "}
+              <a href="/agentes/meetings" className="underline underline-offset-4 hover:text-foreground">
+                Sala de Reuniões
+              </a>
               .
             </p>
           </div>

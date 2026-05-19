@@ -39,12 +39,13 @@ export function MeetingRoom({ meeting, initialMessages }: MeetingRoomProps) {
   const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Light polling while the meeting is active and we're waiting on an agent turn.
+  // Light polling while the meeting is active and no action is in flight.
+  // Paused when `pending` is true to avoid conflicting with in-progress Server Actions.
   useEffect(() => {
-    if (meeting.status !== "active") return
+    if (meeting.status !== "active" || pending) return
     const id = setInterval(() => router.refresh(), 3000)
     return () => clearInterval(id)
-  }, [meeting.status, router])
+  }, [meeting.status, router, pending])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -122,6 +123,7 @@ export function MeetingRoom({ meeting, initialMessages }: MeetingRoomProps) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={3}
+              maxLength={4000}
               disabled={!canSend}
               placeholder={
                 canSend
@@ -136,7 +138,8 @@ export function MeetingRoom({ meeting, initialMessages }: MeetingRoomProps) {
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] text-muted-foreground">
                 Status: {meeting.status}
-                {meeting.status === "active" && " · polling a cada 3s"}
+                {meeting.status === "active" && !pending && " · polling a cada 3s"}
+                {pending && " · processando…"}
               </p>
               <div className="flex gap-2">
                 {canAdvance && (

@@ -327,7 +327,7 @@ function buildFallbackMessage(sender: Exclude<MeetingSender, "user">): string {
     "",
     "Instabilidade temporária na rede de Inteligência Operacional. Não consegui me conectar aos meus modelos de linguagem upstream.",
     "",
-    "William, por favor, clique em **Avançar Turno** novamente em alguns segundos para re-tentar a operação.",
+    "Por favor, clique em **Avançar Turno** novamente em alguns segundos para re-tentar a operação.",
   ].join("\n");
 }
 
