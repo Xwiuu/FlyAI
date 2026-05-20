@@ -509,3 +509,49 @@ export async function getDeals(): Promise<Deal[]> {
     .order("created_at", { ascending: false })
   return (data ?? []) as Deal[]
 }
+
+// ─── Creative Suite ───────────────────────────────────────────────────────────
+
+export type BrandVault = {
+  id: string
+  logo_dark_url: string | null
+  logo_light_url: string | null
+  primary_color: string | null
+  secondary_color: string | null
+  dark_color: string | null
+  font_family: string | null
+  visual_style_notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type InspirationFormat = "single_post" | "carousel" | "reels" | "lead_magnet"
+
+export type Inspiration = {
+  id: string
+  title: string
+  format: InspirationFormat
+  media_url: string
+  category_tags: string[]
+  created_at: string
+}
+
+export async function getBrandVault(): Promise<BrandVault | null> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("brand_vault")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return (data as BrandVault | null) ?? null
+}
+
+export async function listInspirations(): Promise<Inspiration[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("inspiration_bank")
+    .select("*")
+    .order("created_at", { ascending: false })
+  return (data ?? []) as Inspiration[]
+}
