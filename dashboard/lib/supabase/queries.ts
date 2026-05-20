@@ -23,6 +23,11 @@ export type Post = {
   approved_by: string | null
   published_at: string | null
   metadata?: Record<string, unknown> | null
+  image_url?: string | null
+  image_prompt?: string | null
+  art_director_approved?: boolean
+  ceo_approved?: boolean
+  aspect_ratio?: "1:1" | "9:16" | "4:5" | null
 }
 
 export type Metric = {
@@ -46,6 +51,13 @@ export type AgentLog = {
   created_at: string
 }
 
+export type LifecycleStage = "onboarding" | "active" | "at_risk" | "churned"
+export type WorkStyle = "retainer" | "project" | "one_off"
+export type PaymentMethod = "pix" | "boleto" | "credit_card"
+export type NfConfig = "automatic" | "manual"
+
+export type FirstPaymentStatus = "paid" | "pending" | "overdue"
+
 export type Client = {
   id: string
   name: string
@@ -56,6 +68,17 @@ export type Client = {
   next_delivery: string | null
   notes: string | null
   created_at: string
+  lifecycle_stage: LifecycleStage
+  tokens_used_mtd: number
+  work_style: WorkStyle | null
+  recurring: boolean
+  payment_method: PaymentMethod | null
+  nf_config: NfConfig | null
+  contract_url: string | null
+  phone: string | null
+  project_title: string | null
+  briefing: string | null
+  recurring_amount: number | null
 }
 
 export type PipelineItem = {
@@ -71,6 +94,8 @@ export type PipelineItem = {
   updated_at: string
 }
 
+export type InvoiceStatus = "paid" | "pending" | "overdue"
+
 export type Transaction = {
   id: string
   type: "income" | "expense"
@@ -80,6 +105,8 @@ export type Transaction = {
   date: string
   client_id: string | null
   created_at: string
+  invoice_status: InvoiceStatus | null
+  invoice_number: string | null
 }
 
 export type Okr = {
@@ -261,6 +288,17 @@ export async function getAllClients(): Promise<Client[]> {
     .select("*")
     .order("started_at", { ascending: false })
   return data ?? []
+}
+
+export async function getClientInvoices(clientId: string): Promise<Transaction[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("client_id", clientId)
+    .not("invoice_status", "is", null)
+    .order("date", { ascending: false })
+  return (data ?? []) as Transaction[]
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
