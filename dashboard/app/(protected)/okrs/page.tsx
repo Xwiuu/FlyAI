@@ -3,9 +3,11 @@ import { ModuleHeader } from "@/components/dashboard/module-header"
 import { MotionCard } from "@/components/dashboard/motion-card"
 import { Progress } from "@/components/ui/progress"
 import { EmptyModule } from "@/components/dashboard/empty-module"
+import { AddOkrDialog } from "@/components/okrs/add-okr-dialog"
 import { getActiveOkrs } from "@/lib/supabase/queries"
 import { cn } from "@/lib/utils"
 import type { Okr } from "@/lib/supabase/queries"
+import { isOkrSource, resolveKrCurrent, type OkrSource } from "@/lib/okrs/aggregations"
 
 export const dynamic = "force-dynamic"
 
@@ -13,11 +15,16 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(Math.max(v, min), max)
 }
 
-function KeyResult({
-  kr,
-}: {
-  kr: { title: string; target: number; current: number; unit: string }
-}) {
+type KRView = {
+  title: string
+  target: number
+  current: number
+  unit: string
+  source?: OkrSource | null
+  auto?: boolean
+}
+
+function KeyResult({ kr }: { kr: KRView }) {
   const pct = kr.target > 0 ? clamp(Math.round((kr.current / kr.target) * 100), 0, 100) : 0
   const isComplete = pct >= 100
   const isBehind = pct < 40
@@ -25,7 +32,17 @@ function KeyResult({
   return (
     <div className="space-y-2">
       <div className="flex items-start justify-between gap-3">
-        <p className={cn("text-sm leading-snug", isComplete && "text-emerald-400")}>{kr.title}</p>
+        <p className={cn("flex items-center gap-1.5 text-sm leading-snug", isComplete && "text-emerald-400")}>
+          {kr.title}
+          {kr.auto && (
+            <span
+              title="Calculado automaticamente"
+              className="inline-flex h-4 items-center rounded-full border border-border bg-background px-1.5 text-[9px] uppercase tracking-wider text-muted-foreground"
+            >
+              auto
+            </span>
+          )}
+        </p>
         <div className="shrink-0 text-right">
           <p className="text-xs font-semibold tabular-nums">
             {kr.current.toLocaleString("pt-BR")}
@@ -57,13 +74,15 @@ function KeyResult({
   )
 }
 
-function isValidKR(kr: unknown): kr is { title: string; target: number; current: number; unit: string } {
+function isValidKR(kr: unknown): kr is KRView {
   if (!kr || typeof kr !== "object") return false
   const k = kr as Record<string, unknown>
   return typeof k.title === "string" && typeof k.target === "number" && typeof k.current === "number" && typeof k.unit === "string"
 }
 
-function OkrCard({ okr, delay }: { okr: Okr; delay: number }) {
+type OkrView = Omit<Okr, "key_results"> & { key_results: KRView[] }
+
+function OkrCard({ okr, delay }: { okr: OkrView; delay: number }) {
   const krs = (okr.key_results ?? []).filter(isValidKR)
   const avgPct =
     krs.length > 0
@@ -121,13 +140,47 @@ function OkrCard({ okr, delay }: { okr: Okr; delay: number }) {
   )
 }
 
+async function resolveOkr(okr: Okr): Promise<OkrView> {
+  const rawKrs = Array.isArray(okr.key_results) ? okr.key_results : []
+  const krs = await Promise.all(
+    rawKrs.map(async (raw): Promise<KRView | null> => {
+      if (!raw || typeof raw !== "object") return null
+      const k = raw as Record<string, unknown>
+      if (typeof k.title !== "string" || typeof k.target !== "number" || typeof k.unit !== "string") {
+        return null
+      }
+      const baseCurrent = typeof k.current === "number" ? k.current : 0
+      const source = isOkrSource(k.source) ? k.source : null
+      let current = baseCurrent
+      let auto = false
+      if (source) {
+        const resolved = await resolveKrCurrent(source, okr.quarter)
+        if (resolved !== null) {
+          current = resolved
+          auto = true
+        }
+      }
+      return {
+        title: k.title,
+        target: k.target,
+        current,
+        unit: k.unit,
+        source,
+        auto,
+      }
+    }),
+  )
+  return { ...okr, key_results: krs.filter((k): k is KRView => k !== null) }
+}
+
 export default async function OkrsPage() {
-  const okrs = await getActiveOkrs()
+  const okrsRaw = await getActiveOkrs()
+  const okrs = await Promise.all(okrsRaw.map(resolveOkr))
 
   // Group by quarter
-  const byQuarter = okrs.reduce<Record<string, Okr[]>>((acc, okr) => {
+  const byQuarter = okrs.reduce<Record<string, OkrView[]>>((acc, okr) => {
     if (!acc[okr.quarter]) acc[okr.quarter] = [];
-    (acc[okr.quarter] as Okr[]).push(okr)
+    (acc[okr.quarter] as OkrView[]).push(okr)
     return acc
   }, {})
 
@@ -139,6 +192,7 @@ export default async function OkrsPage() {
         eyebrow="Metas"
         title="OKRs"
         description="Objetivos trimestrais com progresso por key result."
+        actions={<AddOkrDialog />}
       />
 
       {okrs.length === 0 ? (

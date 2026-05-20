@@ -14,8 +14,14 @@ import {
   TrendingDown,
   BarChart2,
   Flame,
+  Info,
+  Image as ImageIcon,
+  CheckCircle2,
+  Clock,
+  ChevronDown,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -82,6 +88,38 @@ function postTitle(post: Post): string {
 
 // ─── Post Detail Dialog ────────────────────────────────────────────────────────
 
+// TODO(design-pipeline): Wire approveAsArtDirector / approveAsCEO actions
+// in a follow-up. This Dialog renders the badges read-only for now.
+
+function aspectClass(ratio: Post["aspect_ratio"]): string {
+  if (ratio === "1:1") return "aspect-square"
+  if (ratio === "9:16") return "aspect-[9/16]"
+  return "aspect-[4/5]"
+}
+
+function ApprovalBadge({
+  approved,
+  label,
+}: {
+  approved: boolean
+  label: string
+}) {
+  if (approved) {
+    return (
+      <Badge variant="approved" className="gap-1">
+        <CheckCircle2 className="h-3 w-3" />
+        {label} ✓
+      </Badge>
+    )
+  }
+  return (
+    <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-300">
+      <Clock className="h-3 w-3" />
+      Aguardando {label}
+    </Badge>
+  )
+}
+
 function PostDetailDialog({
   post,
   open,
@@ -91,6 +129,8 @@ function PostDetailDialog({
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
+  const [showTechnical, setShowTechnical] = useState(false)
+
   if (!post) return null
 
   const meta = parseMeta(post)
@@ -99,6 +139,7 @@ function PostDetailDialog({
   const body = meta.body
   const slides = Array.isArray(body) ? body : body ? [body] : []
   const isCarousel = Array.isArray(meta.body)
+  const ratio = post.aspect_ratio ?? (post.type === "stories" ? "9:16" : "1:1")
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,7 +164,81 @@ function PostDetailDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-5">
+        {/* ─── Visual Estúdio ────────────────────────────────────────── */}
+        <section className="mb-5 flex flex-col items-center gap-4">
+          <div
+            className={cn(
+              "w-full max-w-[400px] overflow-hidden rounded-lg border border-border bg-muted/30",
+              aspectClass(ratio),
+            )}
+          >
+            {post.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={post.image_url}
+                alt={title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground/60">
+                <ImageIcon className="h-8 w-8" />
+                <p className="text-[11px] uppercase tracking-[0.16em]">
+                  Aguardando geração visual
+                </p>
+                <p className="text-[10px] text-muted-foreground/50">{ratio}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Badges de crivo */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <ApprovalBadge
+              approved={post.art_director_approved ?? false}
+              label="Diretor de Arte"
+            />
+            <ApprovalBadge
+              approved={post.ceo_approved ?? false}
+              label="CEO Agent"
+            />
+          </div>
+
+          {/* Toggle Info Técnica */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowTechnical((s) => !s)}
+            className="h-7 gap-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <Info className="h-3.5 w-3.5" />
+            Info técnica
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 transition-transform",
+                showTechnical && "rotate-180",
+              )}
+            />
+          </Button>
+        </section>
+
+        {!showTechnical ? null : (
+        <div className="space-y-5 border-t border-border pt-5">
+          {/* ─── Prompt técnico ──────────────────────────────────────── */}
+          {post.image_prompt && (
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Prompt de geração
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-background/50 px-4 py-3">
+                <p className="whitespace-pre-line font-mono text-[11px] leading-relaxed text-muted-foreground">
+                  {post.image_prompt}
+                </p>
+              </div>
+            </section>
+          )}
+
           {/* ─── Ganchos ────────────────────────────────────────────────── */}
           {hooks.length > 0 && (
             <section>
@@ -236,6 +351,7 @@ function PostDetailDialog({
             </section>
           )}
         </div>
+        )}
       </DialogContent>
     </Dialog>
   )

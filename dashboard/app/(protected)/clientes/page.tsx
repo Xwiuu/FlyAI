@@ -2,7 +2,8 @@ import { Users } from "lucide-react"
 import { ModuleHeader } from "@/components/dashboard/module-header"
 import { KpiCard } from "@/components/dashboard/kpi-card"
 import { EmptyModule } from "@/components/dashboard/empty-module"
-import { ClientsTable } from "@/components/dashboard/clients-table"
+import { ClientsKanban } from "@/components/dashboard/clients-kanban"
+import { AddClientDialog } from "@/components/dashboard/add-client-dialog"
 import { getAllClients } from "@/lib/supabase/queries"
 import { formatBRLCompact } from "@/lib/format"
 
@@ -29,6 +30,7 @@ export default async function ClientesPage() {
         eyebrow="Clientes"
         title="Carteira"
         description="Ticket, status, próxima entrega e notas operacionais por cliente."
+        actions={<AddClientDialog />}
       />
 
       {clients.length === 0 ? (
@@ -70,12 +72,12 @@ export default async function ClientesPage() {
             />
           </div>
 
-          {/* Table com filtro client-side */}
+          {/* Kanban — ciclo de vida */}
           <section>
             <p className="mb-4 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              Clientes
+              Ciclo de vida
             </p>
-            <ClientsTable clients={clients} />
+            <ClientsKanban clients={clients} />
           </section>
         </>
       )}
