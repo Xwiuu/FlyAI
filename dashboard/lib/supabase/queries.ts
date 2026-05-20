@@ -94,6 +94,22 @@ export type PipelineItem = {
   updated_at: string
 }
 
+export type DealStage = "lead" | "call" | "proposal" | "won" | "lost"
+
+export type Deal = {
+  id: string
+  title: string
+  value: number
+  probability: number
+  stage: DealStage
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type InvoiceStatus = "paid" | "pending" | "overdue"
 
 export type Transaction = {
@@ -481,4 +497,15 @@ export async function getWeightedPipeline(): Promise<number> {
     const prob = item.win_probability ?? 0
     return sum + ticket * (prob / 100)
   }, 0)
+}
+
+// ─── Deals (CRM) ──────────────────────────────────────────────────────────────
+
+export async function getDeals(): Promise<Deal[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("deals")
+    .select("*")
+    .order("created_at", { ascending: false })
+  return (data ?? []) as Deal[]
 }
