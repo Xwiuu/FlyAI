@@ -14,6 +14,8 @@ import {
   getLatestCompletedWeeklyPlanningMeeting,
   getPostsBySourceMeeting,
   inferTeseCentral,
+  getBrandVault,
+  listInspirations,
 } from "@/lib/supabase/queries"
 import {
   approvePost,
@@ -30,15 +32,25 @@ const AGENTS = ["ceo", "research", "content", "analytics"] as const
 const actions = { approvePost, rejectPost, approveBrief, approveWeeklyPlan, archiveWeeklyPlan }
 
 export default async function AgentesPage() {
-  const [pendingPosts, pendingBriefs, pendingPlans, lastRuns, recentLogs, completedMeeting] =
-    await Promise.all([
-      getPendingPosts(),
-      getPendingBriefs(),
-      getPendingWeeklyPlans(),
-      getLastRunPerAgent(),
-      getAgentLogs(30),
-      getLatestCompletedWeeklyPlanningMeeting(),
-    ])
+  const [
+    pendingPosts,
+    pendingBriefs,
+    pendingPlans,
+    lastRuns,
+    recentLogs,
+    completedMeeting,
+    brandVault,
+    inspirations,
+  ] = await Promise.all([
+    getPendingPosts(),
+    getPendingBriefs(),
+    getPendingWeeklyPlans(),
+    getLastRunPerAgent(),
+    getAgentLogs(30),
+    getLatestCompletedWeeklyPlanningMeeting(),
+    getBrandVault(),
+    listInspirations(),
+  ])
 
   const [completedPosts, tese] = completedMeeting
     ? await Promise.all([
@@ -97,6 +109,8 @@ export default async function AgentesPage() {
             tese={tese}
             completedPosts={completedPosts}
             actions={actions}
+            brandVault={brandVault}
+            inspirations={inspirations}
           />
         </Suspense>
       </section>

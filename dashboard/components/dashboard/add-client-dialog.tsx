@@ -22,10 +22,10 @@ type NfConfig = "automatic" | "manual"
 type FirstPaymentStatus = "paid" | "pending" | "overdue"
 
 const SELECT_CLASS =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+  "flex h-10 w-full appearance-none rounded-md border border-input bg-transparent px-3 py-2.5 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 
 const TEXTAREA_CLASS =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+  "w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
 
 export function AddClientDialog({ label = "Adicionar cliente" }: { label?: string }) {
   const router = useRouter()
@@ -146,10 +146,10 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-4 space-y-6">
             {/* ── Contato ──────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label htmlFor="client-name">Nome</Label>
                 <Input
                   id="client-name"
@@ -161,7 +161,7 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="client-email">Email</Label>
                 <Input
                   id="client-email"
@@ -174,7 +174,7 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
                 />
               </div>
 
-              <div className="space-y-1.5 sm:col-span-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="client-phone">Número de celular</Label>
                 <Input
                   id="client-phone"
@@ -214,8 +214,8 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
             </div>
 
             {/* ── Financeiro ────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label htmlFor="client-ticket">Ticket (R$)</Label>
                 <Input
                   id="client-ticket"
@@ -230,7 +230,7 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="client-first-payment">
                   Status do primeiro pagamento
                 </Label>
@@ -250,7 +250,7 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
                 </select>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="client-payment">Forma de pagamento</Label>
                 <select
                   id="client-payment"
@@ -265,7 +265,7 @@ export function AddClientDialog({ label = "Adicionar cliente" }: { label?: strin
                 </select>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="client-nf">Configuração de NF</Label>
                 <select
                   id="client-nf"

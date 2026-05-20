@@ -69,9 +69,9 @@ const STAGE_MAP = Object.fromEntries(
 ) as Record<DealStage, (typeof STAGES)[number]>
 
 const SELECT_CLS =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+  "flex h-10 w-full appearance-none rounded-md border border-input bg-transparent px-3 py-2.5 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 const TEXTAREA_CLS =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 resize-none"
+  "w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
 
 // ─── AddDealDialog ─────────────────────────────────────────────────────────────
 
@@ -139,8 +139,8 @@ export function AddDealDialog() {
             <DialogTitle>Novo Lead</DialogTitle>
             <DialogDescription>Injete uma oportunidade no topo do funil</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
+          <form onSubmit={handleSubmit} className="mt-2 space-y-5">
+            <div className="space-y-2">
               <Label htmlFor="dl-title">Título *</Label>
               <Input
                 id="dl-title"
@@ -150,7 +150,7 @@ export function AddDealDialog() {
                 disabled={isPending}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="dl-value">Valor estimado (R$)</Label>
               <Input
                 id="dl-value"
@@ -162,7 +162,7 @@ export function AddDealDialog() {
                 disabled={isPending}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="dl-contact">Contato</Label>
               <Input
                 id="dl-contact"
@@ -172,8 +172,8 @@ export function AddDealDialog() {
                 disabled={isPending}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="dl-email">Email</Label>
                 <Input
                   id="dl-email"
@@ -184,7 +184,7 @@ export function AddDealDialog() {
                   disabled={isPending}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="dl-phone">Telefone</Label>
                 <Input
                   id="dl-phone"
@@ -363,8 +363,8 @@ function MaterializeDialog({
             {deal.value > 0 ? `${formatBRL(deal.value)}/mês` : deal.title}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-5">
+          <div className="space-y-2">
             <Label htmlFor="mat-email">Email do cliente *</Label>
             <Input
               id="mat-email"
@@ -375,7 +375,7 @@ function MaterializeDialog({
               disabled={isPending}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="mat-project">Título do projeto *</Label>
             <Input
               id="mat-project"
@@ -385,7 +385,7 @@ function MaterializeDialog({
               disabled={isPending}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="mat-briefing">Briefing</Label>
             <textarea
               id="mat-briefing"
@@ -397,8 +397,8 @@ function MaterializeDialog({
               disabled={isPending}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label>Pagamento</Label>
               <select
                 className={SELECT_CLS}
@@ -411,7 +411,7 @@ function MaterializeDialog({
                 <option value="credit_card">Cartão</option>
               </select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Nota Fiscal</Label>
               <select
                 className={SELECT_CLS}
@@ -424,7 +424,7 @@ function MaterializeDialog({
               </select>
             </div>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>Primeira parcela</Label>
             <select
               className={SELECT_CLS}
@@ -445,7 +445,7 @@ function MaterializeDialog({
             <Switch checked={recurring} onCheckedChange={setRecurring} disabled={isPending} />
           </div>
           {recurring && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="mat-recurring">Valor recorrente mensal (R$)</Label>
               <Input
                 id="mat-recurring"
@@ -457,7 +457,7 @@ function MaterializeDialog({
               />
             </div>
           )}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="mat-contract">URL do contrato</Label>
             <Input
               id="mat-contract"

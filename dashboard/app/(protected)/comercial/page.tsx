@@ -26,7 +26,7 @@ export default async function ComercialPage() {
       : 0
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <ModuleHeader
         eyebrow="Comercial"
         title="Pipeline"
@@ -63,8 +63,8 @@ export default async function ComercialPage() {
         />
       </div>
 
-      <section>
-        <p className="mb-4 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+      <section className="rounded-xl border border-border bg-card/50 p-6">
+        <p className="mb-5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           Kanban
         </p>
         <DealsKanban deals={deals} />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
 import type { Route } from "next"
 import {
@@ -19,12 +19,23 @@ import {
   CheckCircle2,
   Clock,
   ChevronDown,
+  Loader2,
+  Sparkles,
+  Zap,
 } from "lucide-react"
+import {
+  approveAsArtDirector,
+  approveAsCEO,
+  williamCheck,
+  triggerImageGeneration,
+} from "@/app/(protected)/agentes/actions"
+import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -88,9 +99,6 @@ function postTitle(post: Post): string {
 
 // ─── Post Detail Dialog ────────────────────────────────────────────────────────
 
-// TODO(design-pipeline): Wire approveAsArtDirector / approveAsCEO actions
-// in a follow-up. This Dialog renders the badges read-only for now.
-
 function aspectClass(ratio: Post["aspect_ratio"]): string {
   if (ratio === "1:1") return "aspect-square"
   if (ratio === "9:16") return "aspect-[9/16]"
@@ -130,6 +138,10 @@ function PostDetailDialog({
   onOpenChange: (v: boolean) => void
 }) {
   const [showTechnical, setShowTechnical] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [pendingAction, setPendingAction] = useState<
+    "art" | "ceo" | "william" | "image" | null
+  >(null)
 
   if (!post) return null
 
@@ -141,23 +153,49 @@ function PostDetailDialog({
   const isCarousel = Array.isArray(meta.body)
   const ratio = post.aspect_ratio ?? (post.type === "stories" ? "9:16" : "1:1")
 
+  const artApproved = post.art_director_approved ?? false
+  const ceoApproved = post.ceo_approved ?? false
+  const bothApproved = artApproved && ceoApproved
+  const isProcessingImage = post.image_url === "__processing__"
+  const hasImage = !!post.image_url && !isProcessingImage
+
+  function run(
+    action: "art" | "ceo" | "william" | "image",
+    fn: () => Promise<{ ok: true } | { ok: false; error: string }>,
+    onSuccess?: () => void,
+  ) {
+    setPendingAction(action)
+    startTransition(async () => {
+      const res = await fn()
+      setPendingAction(null)
+      if (!res.ok) {
+        toast({ title: "Falha", description: res.error, variant: "destructive" })
+        return
+      }
+      onSuccess?.()
+    })
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-card border-border max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl bg-card border border-border max-h-[90vh] overflow-y-auto p-8">
         {/* ─── Header ─────────────────────────────────────────────────── */}
-        <DialogHeader className="mb-5 pr-6">
+        <DialogHeader className="mb-6 pr-6">
           <div className="flex flex-wrap items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <FormatChip format={post.type} />
                 <Badge variant="pending" className="text-[10px]">
                   {post.status}
                 </Badge>
               </div>
-              <DialogTitle className="text-base font-semibold leading-snug text-foreground">
+              <DialogTitle className="text-xl font-semibold leading-snug text-foreground">
                 {title}
               </DialogTitle>
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <DialogDescription className="sr-only">
+                Revisão detalhada do post com aprovações e geração de imagem
+              </DialogDescription>
+              <p className="mt-2 text-sm text-muted-foreground">
                 {formatRelative(post.created_at)}
               </p>
             </div>
@@ -165,42 +203,132 @@ function PostDetailDialog({
         </DialogHeader>
 
         {/* ─── Visual Estúdio ────────────────────────────────────────── */}
-        <section className="mb-5 flex flex-col items-center gap-4">
+        <section className="mb-6 flex flex-col items-center gap-5">
           <div
             className={cn(
-              "w-full max-w-[400px] overflow-hidden rounded-lg border border-border bg-muted/30",
+              "relative w-full max-w-[400px] overflow-hidden rounded-lg border border-border bg-muted/30",
               aspectClass(ratio),
             )}
           >
-            {post.image_url ? (
+            {hasImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={post.image_url}
+                src={post.image_url!}
                 alt={title}
                 className="h-full w-full object-cover"
               />
+            ) : isProcessingImage ? (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-muted/40 to-muted/10 text-muted-foreground">
+                <Loader2 className="h-7 w-7 animate-spin text-amber-400" />
+                <p className="text-[11px] uppercase tracking-[0.16em] text-amber-300/80">
+                  InstaFlow · gerando…
+                </p>
+                <p className="text-[10px] text-muted-foreground/50">{ratio}</p>
+              </div>
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground/60">
+              <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground/60">
                 <ImageIcon className="h-8 w-8" />
                 <p className="text-[11px] uppercase tracking-[0.16em]">
                   Aguardando geração visual
                 </p>
                 <p className="text-[10px] text-muted-foreground/50">{ratio}</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 h-8 gap-1.5 text-[11px]"
+                  disabled={isPending}
+                  onClick={() =>
+                    run("image", () => triggerImageGeneration(post.id), () => {
+                      toast({
+                        title: "Imagem gerada ✨",
+                        description: "Esteira InstaFlow concluiu o render.",
+                      })
+                    })
+                  }
+                >
+                  {pendingAction === "image" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  Gerar imagem
+                </Button>
               </div>
             )}
           </div>
 
-          {/* Badges de crivo */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <ApprovalBadge
-              approved={post.art_director_approved ?? false}
-              label="Diretor de Arte"
-            />
-            <ApprovalBadge
-              approved={post.ceo_approved ?? false}
-              label="CEO Agent"
-            />
+          {/* Crivo dos agentes — botões clicáveis */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {artApproved ? (
+              <ApprovalBadge approved label="Diretor de Arte" />
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                className="h-9 gap-2 border border-amber-500/50 text-xs text-amber-200 hover:border-amber-400 hover:bg-amber-500/10 focus-visible:ring-amber-500/30"
+                onClick={() =>
+                  run("art", () => approveAsArtDirector(post.id), () => {
+                    toast({ title: "Diretor de Arte aprovou", description: title })
+                  })
+                }
+              >
+                {pendingAction === "art" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                )}
+                Aprovar como Diretor de Arte
+              </Button>
+            )}
+            {ceoApproved ? (
+              <ApprovalBadge approved label="CEO Agent" />
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                className="h-9 gap-2 border border-amber-500/50 text-xs text-amber-200 hover:border-amber-400 hover:bg-amber-500/10 focus-visible:ring-amber-500/30"
+                onClick={() =>
+                  run("ceo", () => approveAsCEO(post.id), () => {
+                    toast({ title: "CEO Agent aprovou", description: title })
+                  })
+                }
+              >
+                {pendingAction === "ceo" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                )}
+                Aprovar como CEO
+              </Button>
+            )}
           </div>
+
+          {/* O Martelo do William */}
+          {bothApproved && post.status !== "approved" && (
+            <Button
+              size="lg"
+              disabled={isPending}
+              onClick={() =>
+                run("william", () => williamCheck(post.id), () => {
+                  toast({
+                    title: "Aprovado por William ⚡",
+                    description: "Post liberado para o feed.",
+                  })
+                  onOpenChange(false)
+                })
+              }
+              className="gap-2 bg-gradient-to-r from-amber-400 to-amber-600 font-semibold text-black shadow-lg shadow-amber-500/30 hover:from-amber-300 hover:to-amber-500"
+            >
+              {pendingAction === "william" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
+              Liberar para o Feed (William Check)
+            </Button>
+          )}
 
           {/* Toggle Info Técnica */}
           <Button

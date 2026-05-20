@@ -4,6 +4,7 @@ import { loadSystemPrompt, loadSkill, loadBrandBible } from "../lib/prompts.js";
 import { extractJson } from "../lib/json.js";
 import { logAgent } from "../lib/logger.js";
 import { serviceClient } from "../lib/supabase.js";
+import { fetchBrandContext, buildCreativePrompt, type ImageGenInput } from "../lib/nanobanana.js";
 
 export type ContentType = "carousel" | "stories" | "post_unico";
 
@@ -66,6 +67,46 @@ function serializeContent(out: ContentOutput): string {
   const tags = out.hashtags.length ? `\n\n${out.hashtags.join(" ")}` : "";
   // Canonical hook = primeira variante. As outras 2 ficam em metadata para A/B futuro.
   return `${out.hooks[0]!.text}\n\n${bodyText}\n\n${out.call_to_action}${tags}`;
+}
+
+async function buildNanobananaPrompt(
+  output: ContentOutput,
+  briefing: string,
+): Promise<string> {
+  const brand = await fetchBrandContext();
+
+  const weeklyThesis = await fetchLatestWeeklyThesis();
+
+  const input: ImageGenInput = {
+    post_content: serializeContent(output),
+    post_title: output.title,
+    post_type: output.type,
+    visual_direction: output.visual_direction,
+    weekly_thesis: weeklyThesis,
+    brand,
+  };
+
+  return buildCreativePrompt(input);
+}
+
+async function fetchLatestWeeklyThesis(): Promise<string | null> {
+  const supabase = serviceClient();
+  const { data } = await supabase
+    .from("weekly_plans")
+    .select("theme, plan")
+    .order("week_of", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const plan = data.plan as Record<string, unknown> | null;
+  const angles = plan?.angles as Array<{ thesis?: string }> | undefined;
+  const theses = angles?.map((a) => a.thesis).filter(Boolean) ?? [];
+
+  return theses.length > 0
+    ? `Tema: ${data.theme}\nTeses: ${theses.join(" | ")}`
+    : data.theme ?? null;
 }
 
 export async function runContentAgent(input: ContentInput): Promise<ContentResult> {
@@ -138,6 +179,8 @@ export async function runContentAgent(input: ContentInput): Promise<ContentResul
 
   if (!input.persist) return { output: parsed };
 
+  const imagePrompt = await buildNanobananaPrompt(parsed, input.briefing);
+
   const supabase = serviceClient();
   const { data, error } = await supabase
     .from("posts")
@@ -147,6 +190,7 @@ export async function runContentAgent(input: ContentInput): Promise<ContentResul
       content: serializeContent(parsed),
       status: "pending",
       metadata: parsed,
+      image_prompt: imagePrompt,
     })
     .select("id")
     .single();

@@ -1,9 +1,10 @@
 "use client"
 
-import { forwardRef } from "react"
+import { forwardRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Check, X, FileText, AlignLeft, Layers, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { StatusPill } from "@/components/dashboard/status-pill"
 import { formatRelative } from "@/lib/format"
 import { renderMarkdown } from "@/lib/markdown"
@@ -102,6 +103,18 @@ interface BriefItemProps {
   isPending: boolean
 }
 
+function BriefHtml({ content }: { content: string }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <Skeleton className="mt-2 h-48 w-full" />
+  return (
+    <div
+      className="mt-2 max-h-[400px] overflow-y-auto pr-2 text-sm text-muted-foreground"
+      dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+    />
+  )
+}
+
 export const BriefApprovalItem = forwardRef<HTMLDivElement, BriefItemProps>(
   function BriefApprovalItem({ brief, onApprove, isPending }, ref) {
     return (
@@ -130,10 +143,7 @@ export const BriefApprovalItem = forwardRef<HTMLDivElement, BriefItemProps>(
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {new Date(brief.date).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
               </p>
-              <div
-                className="mt-2 max-h-[400px] overflow-y-auto pr-2 text-sm text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(brief.content) }}
-              />
+              <BriefHtml content={brief.content} />
             </div>
           </div>
 
