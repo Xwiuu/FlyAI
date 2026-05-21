@@ -4,7 +4,7 @@ import { loadSystemPrompt, loadSkill, loadBrandBible } from "../lib/prompts.js";
 import { extractJson } from "../lib/json.js";
 import { logAgent } from "../lib/logger.js";
 import { serviceClient } from "../lib/supabase.js";
-import { fetchBrandContext, buildCreativePrompt, type ImageGenInput } from "../lib/nanobanana.js";
+import { generateRefinedPrompt } from "./prompt-agent.js";
 
 export type ContentType = "carousel" | "stories" | "post_unico";
 
@@ -73,20 +73,26 @@ async function buildNanobananaPrompt(
   output: ContentOutput,
   briefing: string,
 ): Promise<string> {
-  const brand = await fetchBrandContext();
-
-  const weeklyThesis = await fetchLatestWeeklyThesis();
-
-  const input: ImageGenInput = {
-    post_content: serializeContent(output),
-    post_title: output.title,
-    post_type: output.type,
-    visual_direction: output.visual_direction,
-    weekly_thesis: weeklyThesis,
-    brand,
-  };
-
-  return buildCreativePrompt(input);
+  try {
+    const { runCreativeDirector } = await import("./creative-director.js");
+    const weeklyThesis = await fetchLatestWeeklyThesis();
+    const cda = await runCreativeDirector({
+      briefing,
+      content_type: output.type,
+      post_content: serializeContent(output),
+      post_title: output.title,
+      weekly_thesis: weeklyThesis,
+    });
+    return cda.nanobanana_prompt;
+  } catch {
+    const weeklyThesis = await fetchLatestWeeklyThesis();
+    return generateRefinedPrompt({
+      post_copy: serializeContent(output),
+      post_title: output.title,
+      format: output.type,
+      weekly_thesis: weeklyThesis,
+    });
+  }
 }
 
 async function fetchLatestWeeklyThesis(): Promise<string | null> {

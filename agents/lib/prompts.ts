@@ -32,7 +32,9 @@ export type SystemPromptName =
   | "content"
   | "analytics"
   | "ceo"
-  | "devils-advocate";
+  | "devils-advocate"
+  | "creative-director"
+  | "creative-critic";
 
 /** Returns the system prompt for an agent, prefixed with the shared brand rules. */
 export async function loadSystemPrompt(agent: SystemPromptName): Promise<string> {
