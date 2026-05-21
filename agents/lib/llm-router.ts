@@ -3,21 +3,25 @@ import { callWithTimeout, LLM_TIMEOUT_MS } from "./timeout.js";
 import { logAgent, type AgentName } from "./logger.js";
 
 export type TaskType =
-  | "research"      // grounded web search
-  | "copy_ptbr"     // premium Brazilian-Portuguese copy
-  | "analytics"     // reasoning over numeric data
-  | "fast"          // low-latency utility calls
-  | "long_context"; // > 100k tokens
+  | "research"            // grounded web search
+  | "copy_ptbr"           // premium Brazilian-Portuguese copy
+  | "analytics"           // reasoning over numeric data
+  | "fast"                // low-latency utility calls
+  | "long_context"        // > 100k tokens
+  | "visual_prompt"       // prompt engineering for image generation
+  | "creative_strategy";  // CDA reasoning (briefing, research, concepts, critique)
 
 /** Primary provider per task — see CLAUDE.md §LLM Router. */
 export function route(task: TaskType): ProviderName {
   switch (task) {
-    case "long_context": return "gemini";
-    case "research":     return "gemini";
-    case "copy_ptbr":    return "nim";
-    case "analytics":    return "gemini";
-    case "fast":         return "groq";
-    default:             return "gemini";
+    case "long_context":  return "gemini";
+    case "research":      return "gemini";
+    case "copy_ptbr":     return "nim";
+    case "analytics":     return "gemini";
+    case "visual_prompt":       return "gemini";
+    case "creative_strategy":   return "gemini";
+    case "fast":                return "groq";
+    default:                    return "gemini";
   }
 }
 

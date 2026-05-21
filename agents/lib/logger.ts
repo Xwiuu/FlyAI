@@ -7,7 +7,8 @@ export type AgentName =
   | "ceo"
   | "router"
   | "devils_advocate"
-  | "meeting";
+  | "meeting"
+  | "creative_director";
 export type LogStatus = "success" | "error" | "pending";
 
 export interface LogEntry {
